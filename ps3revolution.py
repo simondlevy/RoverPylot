@@ -45,8 +45,6 @@ import subprocess
 import tempfile
 import os
 
-import cv2
-        
 # Supports CTRL-C to override threads
 def _signal_handler(signal, frame):
     frame.f_locals['rover'].close()
