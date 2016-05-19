@@ -5,8 +5,7 @@ Pilot the Brookstone Rover 2.0 and Rover Revolution from Python
 
 <h2>Instructions</h2>
 
-
-<a href="https://github.com/simondlevy/RoverPylot/">This repository</a> contains a Python API and demo
+This repository contains a Python API and demo
 program allowing you to control the Brookstone 
 <a href="http://www.amazon.com/Rover-2-0-App-Controlled-Wireless-Tank/dp/B0093285XK">
 Rover 2.0 spy tank</a> and <a
