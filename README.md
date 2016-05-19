@@ -9,10 +9,10 @@ Pilot the Brookstone Rover 2.0 and Rover Revolution from Python
 <a href="https://github.com/simondlevy/RoverPylot/">This repository</a> contains a Python API and demo
 program allowing you to control the Brookstone 
 <a href="http://www.amazon.com/Rover-2-0-App-Controlled-Wireless-Tank/dp/B0093285XK">
-Rover 2.0 spy tank</a> and 
-
-<a href="http://www.amazon.com/Rover-Revolution-App-Controlled-Wireless-Vehicle/dp/B00GLVXM70/ref=sr_1_1?s=toys-and-games&ie=UTF8&qid=1421113202&sr=1-1&keywords=brookstone+rover+revolution">Rover Revolution</a> 
-spy vehicle from your laptop or PC. To get started, you should get hold of a 
+Rover 2.0 spy tank</a> and <a
+href="http://www.amazon.com/Rover-Revolution-App-Controlled-Wireless-Vehicle/dp/B00GLVXM70/ref=sr_1_1?s=toys-and-games&ie=UTF8&qid=1421113202&sr=1-1&keywords=brookstone+rover+revolution">Rover
+Revolution</a> spy vehicle from your laptop or PC. To get started, you should
+get hold of a 
 Rover 2.0 or Revolution (of course) and a Playstation PS3 controller or clone, and install the repository
 (<b>sudo python setup.py install</b> for Linux users), as well as
 <a href="http://pygame.org/news.html">PyGame</a> and either <a href="http://opencv.org/">OpenCV</a> for Python
