@@ -33,22 +33,21 @@ SPEED_THRESH       = 0.5
 
 # For FFPLAY 
 FRAMERATE          = 20
-DELAY_SEC          = 2.5
+#DELAY_SEC          = 2.5
+
+#import signal
+import time
+import cv2
+import ffmpeg
+import numpy as np
 
 from rover import Revolution
 
-import time
-import pygame
-import sys
-import signal
-import subprocess
-import tempfile
-import os
 
 # Supports CTRL-C to override threads
-def _signal_handler(signal, frame):
-    frame.f_locals['rover'].close()
-    sys.exit(0)
+#def _signal_handler(signal, frame):
+#    frame.f_locals['rover'].close()
+#    sys.exit(0)
 
 # Rover subclass for PS3 + OpenCV
 class PS3Rover(Revolution):
@@ -60,14 +59,15 @@ class PS3Rover(Revolution):
         self.wname = 'Rover Revolution'
 
         # Set up controller using PyGame
-        pygame.display.init()
-        pygame.joystick.init()
-        self.controller = pygame.joystick.Joystick(0)
-        self.controller.init()
+        #pygame.display.init()
+        #pygame.joystick.init()
+        #self.controller = pygame.joystick.Joystick(0)
+        #self.controller.init()
 
          # Defaults on startup: no stealth; driving camera
-        self.stealthIsOn = False
-        self.usingTurret = False
+        self.stealthIsOn = True
+        self.usingTurret = True
+
 
         # Tracks button-press times for debouncing
         self.lastButtonTime = 0
@@ -79,14 +79,14 @@ class PS3Rover(Revolution):
     def processVideo(self, h264bytes, timestamp_msec):
 
         # Update controller events
-        pygame.event.pump()    
+        #pygame.event.pump()
 
         # Toggle stealth mode (lights off / infrared camera on)    
-        self.stealthIsOn = self.checkButton(self.stealthIsOn, BUTTON_STEALTH, self.turnStealthOn, self.turnStealthOff)   
-
+        #self.stealthIsOn = self.checkButton(self.stealthIsOn, BUTTON_STEALTH, self.turnStealthOn, self.turnStealthOff)
+        #self.turnStealthOff()
         # Toggle stealth mode (lights off / infrared camera on)    
-        self.usingTurret = self.checkButton(self.usingTurret, BUTTON_TURRET, self.useTurretCamera, self.useDrivingCamera)   
-
+        #self.usingTurret = self.checkButton(self.usingTurret, BUTTON_TURRET, self.useTurretCamera, self.useDrivingCamera)
+        #self.useTurretCamera()
         # Use right joystick to drive
         axis2 = self.get_axis(2)
         axis3 = self.get_axis(3)
@@ -101,11 +101,10 @@ class PS3Rover(Revolution):
         axis1 = self.axis_to_dir(self.get_axis(AXIS_PAN_VERT))
         self.moveCameraVertical(-axis1)
 
-
         # Send video through pipe
-        self.tmpfile.write(h264bytes)
+        self.tmpfile.stdin.write(h264bytes)
 
-    # Converts axis value to direction 
+    # Converts axis value to direction
     def axis_to_dir(self, axis):
 
         d = 0
@@ -120,7 +119,7 @@ class PS3Rover(Revolution):
     # Returns axis value when outside noise threshold, else 0
     def get_axis(self, index):
         
-        value = self.controller.get_axis(index)
+        value = 0 #self.controller.get_axis(index)
         
         if value > MIN_AXIS_ABSVAL:
             return value
@@ -149,20 +148,44 @@ class PS3Rover(Revolution):
 
 if __name__ == '__main__':
 
+    width, height = 640, 480
+    process = (
+        ffmpeg
+            .input('pipe:')
+            .video
+            .output('pipe:', format='rawvideo', pix_fmt='bgr24', s='{}x{}'.format(width, height))
+            .run_async(pipe_stdin=True, pipe_stdout=True)
+    )
     # Create a named temporary file for video stream
-    tmpfile = tempfile.NamedTemporaryFile()
+    #tmpfile = io.BytesIO() #tempfile.NamedTemporaryFile()
 
     # Create a PS3 Rover object
-    rover = PS3Rover(tmpfile)
+    rover = PS3Rover(process)
 
     # Set up signal handler for CTRL-C
-    signal.signal(signal.SIGINT, _signal_handler)
+    #signal.signal(signal.SIGINT, _signal_handler)
 
     # Wait a few seconds, then being playing the tmp video file
-    time.sleep(DELAY_SEC)
-    cmd = 'ffplay -window_title Rover_Revolution -framerate %d %s' % (FRAMERATE, tmpfile.name)
-    FNULL = open(os.devnull, 'w')
-    subprocess.call(cmd.split(),  stdout=FNULL, stderr=subprocess.STDOUT)
+    #time.sleep(DELAY_SEC)
+
+    while (True):
+
+        in_bytes = process.stdout.read(height * width * 3)
+
+        if not in_bytes:
+            continue
+
+        # transform the byte read into a numpy array
+        in_frame = (
+            np
+            .frombuffer(in_bytes, np.uint8)
+            .reshape([height, width, 3])
+        )
+
+        # Display the frame
+        cv2.imshow('in_frame', in_frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
 
     # Shut down Rover
     rover.close()

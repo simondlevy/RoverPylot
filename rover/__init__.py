@@ -36,7 +36,7 @@ class Rover:
         TARGET_ID = 'AC13'
         TARGET_PASSWORD = 'AC13'      
         
-        self.TREAD_DELAY_SEC = 1.0
+        self.TREAD_DELAY_SEC = 1
         self.KEEPALIVE_PERIOD_SEC = 60
         
                             
