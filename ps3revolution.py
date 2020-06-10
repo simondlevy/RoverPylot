@@ -23,7 +23,7 @@ AXIS_PAN_HORZ      = 0  # Left joystick controls turret pan
 AXIS_PAN_VERT      = 1  #  and tilt
 
 # Avoid button bounce by enforcing lag between button events
-MIN_BUTTON_LAG_SEC = 0.5
+MIN_BUTTON_LAG_SEC = 0.3
 
 # Avoid close-to-zero values on axis
 MIN_AXIS_ABSVAL    = 0.01
@@ -35,82 +35,14 @@ SPEED_THRESH       = 0.5
 FRAMERATE          = 20
 #DELAY_SEC          = 2.5
 
-#import signal
 import time
 import cv2
 import ffmpeg
 import numpy as np
-#import threading
-from pynput.keyboard import Key, Listener
-#from pynput import keyboard
+
 from rover import Revolution
 
-def up():
-    print("Go up")
-
-
-def down():
-    print("Go down")
-
-
-def left():
-    print("Go left")
-
-
-def right():
-    print("Go right")
-
-
-def up_left():
-    print("Go up_left")
-
-
-def up_right():
-    print("Go up_right")
-
-
-def down_left():
-    print("Go down_left")
-
-
-def down_right():
-    print("Go down_right")
-
-
-def do_nothing():
-    print("Do Nothing")
-
-
-# Create a mapping of keys to function (use frozenset as sets are not hashable - so they can't be used as keys)
-
-combination_to_function = {
-    frozenset([Key.up]): up,  # No `()` after function_1 because
-    # we want to pass the function, not the value of the function
-    frozenset([Key.down, ]): down,
-    frozenset([Key.left, ]): left,
-    frozenset([Key.right, ]): right,
-    frozenset([Key.up, Key.left]): up_left,
-    frozenset([Key.up, Key.right]): up_right,
-    frozenset([Key.down, Key.left]): down_left,
-    frozenset([Key.down, Key.right]): down_right,
-}
-
-# Currently pressed keys
-current_keys = set()
 wheeldir, steerdir, goslow = 0, 0, 1
-
-def on_press(key):
-    # When a key is pressed, add it to the set we are keeping track of and check if this set is in the dictionary
-    current_keys.add(key)
-    if frozenset(current_keys) in combination_to_function:
-        # If the current set of keys are in the mapping, execute the function
-        combination_to_function[frozenset(current_keys)]()
-
-
-def on_release(key):
-    # When a key is released, remove it from the set of keys we are keeping track of
-    if key in current_keys:
-        current_keys.remove(key)
 
 # Supports CTRL-C to override threads
 #def _signal_handler(signal, frame):
@@ -126,12 +58,6 @@ class PS3Rover(Revolution):
         Revolution.__init__(self)
         self.wname = 'Rover Revolution'
 
-        # Set up controller using PyGame
-        #pygame.display.init()
-        #pygame.joystick.init()
-        #self.controller = pygame.joystick.Joystick(0)
-        #self.controller.init()
-
          # Defaults on startup: no stealth; driving camera
         self.stealthIsOn = True
         self.usingTurret = True
@@ -144,71 +70,8 @@ class PS3Rover(Revolution):
 
     # Automagically called by Rover class
     def processVideo(self, h264bytes, timestamp_msec):
-
-        # Update controller events
-        #pygame.event.pump()
-
-        # Toggle stealth mode (lights off / infrared camera on)    
-        #self.stealthIsOn = self.checkButton(self.stealthIsOn, BUTTON_STEALTH, self.turnStealthOn, self.turnStealthOff)
-        #self.turnStealthOff()
-        # Toggle stealth mode (lights off / infrared camera on)    
-        #self.usingTurret = self.checkButton(self.usingTurret, BUTTON_TURRET, self.useTurretCamera, self.useDrivingCamera)
-        #self.useTurretCamera()
-        # Use right joystick to drive
-        #axis2 = self.get_axis(2)
-        #axis3 = self.get_axis(3)
-        #goslow = False if abs(axis3) > SPEED_THRESH or abs(axis2) > SPEED_THRESH else True
-        #wheeldir = -self.axis_to_dir(axis3)
-        #steerdir = self.axis_to_dir(axis2)
-        #self.drive(wheeldir, steerdir, goslow)
-
-        # Use left joystick to control turret camera
-        #axis0 = self.axis_to_dir(self.get_axis(AXIS_PAN_HORZ))
-        #self.moveCameraHorizontal(-axis0)
-        #axis1 = self.axis_to_dir(self.get_axis(AXIS_PAN_VERT))
-        #self.moveCameraVertical(-axis1)
-
         # Send video through pipe
         self.tmpfile.stdin.write(h264bytes)
-    # Converts axis value to direction
-    def axis_to_dir(self, axis):
-
-        d = 0
-
-        if axis > 0:
-            d = 1
-        elif axis < 0:
-            d = -1
-
-        return d
-
-    # Returns axis value when outside noise threshold, else 0
-    def get_axis(self, index):
-        
-        value = 0 #self.controller.get_axis(index)
-        
-        if value > MIN_AXIS_ABSVAL:
-            return value
-        elif value < -MIN_AXIS_ABSVAL:
-            return value
-        else:
-            return 0
-
-
-    # Handles button bounce by waiting a specified time between button presses   
-    def checkButton(self, flag, buttonID, onRoutine=None, offRoutine=None):
-        if (buttonID):
-            if (time.time() - self.lastButtonTime) > MIN_BUTTON_LAG_SEC:
-                self.lastButtonTime = time.time()
-                if flag:
-                    if offRoutine:
-                        offRoutine()
-                    flag = False
-                else:
-                    if onRoutine:
-                        onRoutine()
-                    flag = True
-        return flag
 
 # main -----------------------------------------------------------------------------------
 
@@ -222,21 +85,14 @@ if __name__ == '__main__':
             .output('pipe:', format='rawvideo', pix_fmt='bgr24', s='{}x{}'.format(width, height))
             .run_async(pipe_stdin=True, pipe_stdout=True)
     )
-    # Create a named temporary file for video stream
-    #tmpfile = io.BytesIO() #tempfile.NamedTemporaryFile()
 
     # Create a PS3 Rover object
     rover = PS3Rover(process)
-
-    # Set up signal handler for CTRL-C
-    #signal.signal(signal.SIGINT, _signal_handler)
 
     # Wait a few seconds, then being playing the tmp video file
     #time.sleep(DELAY_SEC)
 
     while True:
-        #listener = Listener(on_press=on_press, on_release=on_release)
-        #listener.start()
 
         in_bytes = process.stdout.read(height * width * 3)
 
@@ -252,10 +108,10 @@ if __name__ == '__main__':
 
         # Display the frame
         cv2.imshow('in_frame', in_frame)
-        key = cv2.waitKey(33) & 0xFF
-        if (time.time() - rover.lastButtonTime) > MIN_BUTTON_LAG_SEC:
-            wheeldir, steerdir, goslow = 0, 0, 1
-        if key == ord('q'):
+
+        key = cv2.waitKey(1) & 0xFF
+
+        if key == ord('c'):
             break
         elif key == ord('z'):
             if (time.time() - rover.lastButtonTime) > MIN_BUTTON_LAG_SEC:
@@ -280,31 +136,64 @@ if __name__ == '__main__':
         elif key == ord('w'):
             if (time.time() - rover.lastButtonTime) > MIN_BUTTON_LAG_SEC:
                 rover.lastButtonTime = time.time()
+                steerdir = 0
                 wheeldir = 1
         elif key == ord('s'):
             if (time.time() - rover.lastButtonTime) > MIN_BUTTON_LAG_SEC:
                 rover.lastButtonTime = time.time()
+                steerdir = 0
+                wheeldir = -1
+        elif key == ord('d'):
+            if (time.time() - rover.lastButtonTime) > MIN_BUTTON_LAG_SEC:
+                rover.lastButtonTime = time.time()
+                steerdir = 1
                 wheeldir = -1
         elif key == ord('a'):
             if (time.time() - rover.lastButtonTime) > MIN_BUTTON_LAG_SEC:
                 rover.lastButtonTime = time.time()
                 steerdir = -1
+                wheeldir = -1
+        elif key == ord('q'):
+            if (time.time() - rover.lastButtonTime) > MIN_BUTTON_LAG_SEC:
+                rover.lastButtonTime = time.time()
+                steerdir = -1
                 wheeldir = 1
-        elif key == ord('d'):
+        elif key == ord('e'):
             if (time.time() - rover.lastButtonTime) > MIN_BUTTON_LAG_SEC:
                 rover.lastButtonTime = time.time()
                 steerdir = 1
                 wheeldir = 1
         elif key == ord('l'):
-            rover.moveCameraHorizontal(-1)
+            if (time.time() - rover.lastButtonTime) > MIN_BUTTON_LAG_SEC:
+                rover.lastButtonTime = time.time()
+                hr = -1
         elif key == ord('j'):
-            rover.moveCameraHorizontal(1)
+            if (time.time() - rover.lastButtonTime) > MIN_BUTTON_LAG_SEC:
+                rover.lastButtonTime = time.time()
+                hr = 1
         elif key == ord('k'):
-            rover.moveCameraVertical(-1)
+            if (time.time() - rover.lastButtonTime) > MIN_BUTTON_LAG_SEC:
+                rover.lastButtonTime = time.time()
+                vr = -1
         elif key == ord('i'):
-            rover.moveCameraVertical(1)
+            if (time.time() - rover.lastButtonTime) > MIN_BUTTON_LAG_SEC:
+                rover.lastButtonTime = time.time()
+                vr = 1
+        elif key == ord('t'):
+            if (time.time() - rover.lastButtonTime) > MIN_BUTTON_LAG_SEC:
+                rover.lastButtonTime = time.time()
+                goslow = 1 - goslow
+                if(goslow):
+                    print('Slow mode')
+                else:
+                    print('Speed mode')
+        else:
+            if (time.time() - rover.lastButtonTime) > MIN_BUTTON_LAG_SEC:
+                steerdir, wheeldir = 0, 0
+                hr, vr = 0, 0
 
+        rover.moveCameraHorizontal(hr)
+        rover.moveCameraVertical(vr)
         # Shut down Rover
         rover.drive(wheeldir, steerdir, goslow)
-        #listener.stop()
     rover.close()
