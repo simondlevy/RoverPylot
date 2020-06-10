@@ -40,9 +40,9 @@ import time
 import cv2
 import ffmpeg
 import numpy as np
-import threading
+#import threading
 from pynput.keyboard import Key, Listener
-from pynput import keyboard
+#from pynput import keyboard
 from rover import Revolution
 
 def up():
@@ -163,10 +163,10 @@ class PS3Rover(Revolution):
         #self.drive(wheeldir, steerdir, goslow)
 
         # Use left joystick to control turret camera
-        axis0 = self.axis_to_dir(self.get_axis(AXIS_PAN_HORZ))
-        self.moveCameraHorizontal(-axis0)
-        axis1 = self.axis_to_dir(self.get_axis(AXIS_PAN_VERT))
-        self.moveCameraVertical(-axis1)
+        #axis0 = self.axis_to_dir(self.get_axis(AXIS_PAN_HORZ))
+        #self.moveCameraHorizontal(-axis0)
+        #axis1 = self.axis_to_dir(self.get_axis(AXIS_PAN_VERT))
+        #self.moveCameraVertical(-axis1)
 
         # Send video through pipe
         self.tmpfile.stdin.write(h264bytes)
@@ -234,7 +234,9 @@ if __name__ == '__main__':
     # Wait a few seconds, then being playing the tmp video file
     #time.sleep(DELAY_SEC)
 
-    while (1):
+    while True:
+        #listener = Listener(on_press=on_press, on_release=on_release)
+        #listener.start()
 
         in_bytes = process.stdout.read(height * width * 3)
 
