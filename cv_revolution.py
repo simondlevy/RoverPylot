@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
 '''
-ps3revolution.py Drive the Brookstone Rover Revolution via the P3 Controllerj
+cv_revolution.py Drive the Brookstone Rover Revolution via the OpenCV
 
-Copyright (C) 2014 Simon D. Levy
+Copyright (C) 2014 Simon D. Levy, moded by Nehc (2015, 2020-2022)
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as 
@@ -24,7 +24,7 @@ BUTTON_TURRET      = 'x'  # Square button toggles turret camera
 #AXIS_PAN_VERT      = 1  #  and tilt
 
 # Avoid button bounce by enforcing lag between button events
-MIN_BUTTON_LAG_SEC = 0.3
+MIN_BUTTON_LAG_SEC = 0.2
 
 # Avoid close-to-zero values on axis
 MIN_AXIS_ABSVAL    = 0.01
@@ -61,8 +61,8 @@ class CVRover(Revolution):
         self.wname = 'Rover Revolution'
 
          # Defaults on startup: no stealth; driving camera
-        self.stealthIsOn = False #True
-        self.usingTurret = False #True
+        self.stealthIsOn = False
+        self.usingTurret = False
 
         # Tracks button-press times for debouncing
         self.lastButtonTime = 0
@@ -99,6 +99,9 @@ if __name__ == '__main__':
 
     while True:
         in_bytes = rover.tmpfile.stdout.read(height * width * 3)
+
+        if not in_bytes:
+            continue
 
         # transform the byte read into a numpy array
         in_frame = (
