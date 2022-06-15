@@ -38,6 +38,7 @@ FRAMERATE          = 20
 import time
 import cv2
 import ffmpeg
+#import tempfile
 import numpy as np
 
 from rover import Revolution
@@ -86,6 +87,7 @@ if __name__ == '__main__':
             .run_async(pipe_stdin=True, pipe_stdout=True)
     )
 
+    #process = tempfile.NamedTemporaryFile()
     # Create a PS3 Rover object
     rover = PS3Rover(process)
 
