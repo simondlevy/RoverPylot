@@ -143,8 +143,8 @@ class Rover:
             threading.Timer(self.KEEPALIVE_PERIOD_SEC, self._startKeepaliveTask, [])
         self.keepalive_timer.start()
 
-    def _sendCommandByteRequest(self, id, bytes=[]):
-        self._sendCommandRequest(id, len(bytes), bytes)
+    def _sendCommandByteRequest(self, id, _bytes=[]):
+        self._sendCommandRequest(id, len(_bytes), _bytes)
         
     def _sendCommandIntRequest(self, id, intvals):
         bytevals = []
@@ -161,16 +161,16 @@ class Rover:
         self._sendRequest(self.commandsock, 'O', id, n, contents)
 
     def _sendRequest(self, sock, c, id, n, contents):                  
-        _bytes = [ord('M'), ord('O'), ord('_'), ord(c), id, \
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, n, 0, 0, 0, 0, 0, 0, 0]
-        _bytes.extend(contents)
-        request = ''.join(map(chr, _bytes))
-        #with open('q.bin', 'w') as f:
-        #    f.write(request)
         if sys.version_info < (3, 0):
-            sock.send(request)
+            _bytes = [ord('M'), ord('O'), ord('_'), ord(c), id, \
+                      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, n, 0, 0, 0, 0, 0, 0, 0]
+            _bytes.extend(contents)
+            request = ''.join(map(chr, _bytes))
         else:
-            sock.send(request.encode())
+            request = bytearray([ord('M'), ord('O'), ord('_'), ord(c), id, \
+                      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, n, 0, 0, 0, 0, 0, 0, 0])
+            request.extend(bytearray(contents))
+        sock.send(request)
 
     def _receiveCommandReply(self, count):
         reply = self.commandsock.recv(count)
@@ -178,6 +178,7 @@ class Rover:
         
     def _newSocket(self):
         sock = socket.socket()
+        sock.bind(('192.168.1.1',0))
         sock.connect((self.HOST, self.PORT)) 
         return sock
 

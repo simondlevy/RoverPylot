@@ -17,10 +17,11 @@ GNU General Public License for more details.
 '''
 
 # You may want to adjust these for your own controller
-BUTTON_STEALTH     = 1  # Circle button toggles stealth mode
-BUTTON_TURRET      = 3  # Square button toggles turret camera
-AXIS_PAN_HORZ      = 0  # Left joystick controls turret pan
-AXIS_PAN_VERT      = 1  #  and tilt
+BUTTON_STEALTH     = 'z'  # Circle button toggles stealth mode
+BUTTON_TURRET      = 'x'  # Square button toggles turret camera
+# AXIS don't need: WASD - for move car, IJKL - for turret
+#AXIS_PAN_HORZ      = 0  # Left joystick controls turret pan
+#AXIS_PAN_VERT      = 1  #  and tilt
 
 # Avoid button bounce by enforcing lag between button events
 MIN_BUTTON_LAG_SEC = 0.3
@@ -51,7 +52,7 @@ wheeldir, steerdir, goslow = 0, 0, 1
 #    sys.exit(0)
 
 # Rover subclass for PS3 + OpenCV
-class PS3Rover(Revolution):
+class CVRover(Revolution):
 
     def __init__(self, tmpfile):
 
@@ -60,8 +61,8 @@ class PS3Rover(Revolution):
         self.wname = 'Rover Revolution'
 
          # Defaults on startup: no stealth; driving camera
-        self.stealthIsOn = True
-        self.usingTurret = True
+        self.stealthIsOn = False #True
+        self.usingTurret = False #True
 
         # Tracks button-press times for debouncing
         self.lastButtonTime = 0
@@ -72,6 +73,7 @@ class PS3Rover(Revolution):
     # Automagically called by Rover class
     def processVideo(self, h264bytes, timestamp_msec):
         # Send video through pipe
+        #self.tmpfile.write(h264bytes)
         self.tmpfile.stdin.write(h264bytes)
 
 # main -----------------------------------------------------------------------------------
@@ -79,27 +81,24 @@ class PS3Rover(Revolution):
 if __name__ == '__main__':
 
     width, height = 640, 480
-    process = (
+
+    #process = tempfile.NamedTemporaryFile()
+    #process = tempfile.NamedTemporaryFile(mode='w+b', bufsize=0 , suffix='.avi', prefix='RoverRev',
+    #                                       dir='\Python27\RoverRev_WinPylot', delete=False)
+    # Create a OpenCV Rover object
+    rover = CVRover((
         ffmpeg
             .input('pipe:')
             .video
-            .output('pipe:', format='rawvideo', pix_fmt='bgr24', s='{}x{}'.format(width, height))
+            .output('pipe:', format='rawvideo', pix_fmt='bgr24', s=f'{width}x{height}')
             .run_async(pipe_stdin=True, pipe_stdout=True)
-    )
-
-    #process = tempfile.NamedTemporaryFile()
-    # Create a PS3 Rover object
-    rover = PS3Rover(process)
+    ))
 
     # Wait a few seconds, then being playing the tmp video file
     #time.sleep(DELAY_SEC)
 
     while True:
-
-        in_bytes = process.stdout.read(height * width * 3)
-
-        if not in_bytes:
-            continue
+        in_bytes = rover.tmpfile.stdout.read(height * width * 3)
 
         # transform the byte read into a numpy array
         in_frame = (
@@ -115,7 +114,7 @@ if __name__ == '__main__':
 
         if key == ord('c'):
             break
-        elif key == ord('z'):
+        elif key == ord(BUTTON_STEALTH):
             if (time.time() - rover.lastButtonTime) > MIN_BUTTON_LAG_SEC:
                 rover.lastButtonTime = time.time()
                 rover.stealthIsOn = not rover.stealthIsOn;
@@ -125,7 +124,7 @@ if __name__ == '__main__':
                 else:
                     print('Stealth mode Off')
                     rover.turnStealthOff()
-        elif key == ord('x'):
+        elif key == ord(BUTTON_TURRET):
             if (time.time() - rover.lastButtonTime) > MIN_BUTTON_LAG_SEC:
                 rover.lastButtonTime = time.time()
                 rover.usingTurret = not rover.usingTurret;
@@ -199,4 +198,3 @@ if __name__ == '__main__':
         # Shut down Rover
         rover.drive(wheeldir, steerdir, goslow)
     rover.close()
-ª
