@@ -2,14 +2,11 @@
 
 '''
 ps3revolution.py Drive the Brookstone Rover Revolution via the P3 Controllerj
-
 Copyright (C) 2014 Simon D. Levy
-
 This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Lesser General Public License as 
-published by the Free Software Foundation, either version 3 of the 
+it under the terms of the GNU Lesser General Public License as
+published by the Free Software Foundation, either version 3 of the
 License, or (at your option) any later version.
-
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -17,23 +14,23 @@ GNU General Public License for more details.
 '''
 
 # You may want to adjust these for your own controller
-BUTTON_STEALTH     = 1  # Circle button toggles stealth mode
-BUTTON_TURRET      = 3  # Square button toggles turret camera
-AXIS_PAN_HORZ      = 0  # Left joystick controls turret pan
-AXIS_PAN_VERT      = 1  #  and tilt
+BUTTON_STEALTH = 1  # Circle button toggles stealth mode
+BUTTON_TURRET = 3  # Square button toggles turret camera
+AXIS_PAN_HORZ = 0  # Left joystick controls turret pan
+AXIS_PAN_VERT = 1  # and tilt
 
 # Avoid button bounce by enforcing lag between button events
 MIN_BUTTON_LAG_SEC = 0.5
 
 # Avoid close-to-zero values on axis
-MIN_AXIS_ABSVAL    = 0.01
+MIN_AXIS_ABSVAL = 0.01
 
 # Threshold for faster speed
-SPEED_THRESH       = 0.5
+SPEED_THRESH = 0.5
 
-# For FFPLAY 
-FRAMERATE          = 20
-DELAY_SEC          = 2.5
+# For FFPLAY
+FRAMERATE = 20
+DELAY_SEC = 2.5
 
 from rover import Revolution
 
@@ -45,10 +42,12 @@ import subprocess
 import tempfile
 import os
 
+
 # Supports CTRL-C to override threads
 def _signal_handler(signal, frame):
     frame.f_locals['rover'].close()
     sys.exit(0)
+
 
 # Rover subclass for PS3 + OpenCV
 class PS3Rover(Revolution):
@@ -65,7 +64,7 @@ class PS3Rover(Revolution):
         self.controller = pygame.joystick.Joystick(0)
         self.controller.init()
 
-         # Defaults on startup: no stealth; driving camera
+        # Defaults on startup: no stealth; driving camera
         self.stealthIsOn = False
         self.usingTurret = False
 
@@ -79,13 +78,14 @@ class PS3Rover(Revolution):
     def processVideo(self, h264bytes, timestamp_msec):
 
         # Update controller events
-        pygame.event.pump()    
+        pygame.event.pump()
 
-        # Toggle stealth mode (lights off / infrared camera on)    
-        self.stealthIsOn = self.checkButton(self.stealthIsOn, BUTTON_STEALTH, self.turnStealthOn, self.turnStealthOff)   
+        # Toggle stealth mode (lights off / infrared camera on)
+        self.stealthIsOn = self.checkButton(self.stealthIsOn, BUTTON_STEALTH, self.turnStealthOn, self.turnStealthOff)
 
-        # Toggle stealth mode (lights off / infrared camera on)    
-        self.usingTurret = self.checkButton(self.usingTurret, BUTTON_TURRET, self.useTurretCamera, self.useDrivingCamera)   
+        # Toggle stealth mode (lights off / infrared camera on)
+        self.usingTurret = self.checkButton(self.usingTurret, BUTTON_TURRET, self.useTurretCamera,
+                                            self.useDrivingCamera)
 
         # Use right joystick to drive
         axis2 = self.get_axis(2)
@@ -101,11 +101,10 @@ class PS3Rover(Revolution):
         axis1 = self.axis_to_dir(self.get_axis(AXIS_PAN_VERT))
         self.moveCameraVertical(-axis1)
 
-
         # Send video through pipe
         self.tmpfile.write(h264bytes)
 
-    # Converts axis value to direction 
+    # Converts axis value to direction
     def axis_to_dir(self, axis):
 
         d = 0
@@ -119,9 +118,9 @@ class PS3Rover(Revolution):
 
     # Returns axis value when outside noise threshold, else 0
     def get_axis(self, index):
-        
+
         value = self.controller.get_axis(index)
-        
+
         if value > MIN_AXIS_ABSVAL:
             return value
         elif value < -MIN_AXIS_ABSVAL:
@@ -129,8 +128,7 @@ class PS3Rover(Revolution):
         else:
             return 0
 
-
-    # Handles button bounce by waiting a specified time between button presses   
+    # Handles button bounce by waiting a specified time between button presses
     def checkButton(self, flag, buttonID, onRoutine=None, offRoutine=None):
         if self.controller.get_button(buttonID):
             if (time.time() - self.lastButtonTime) > MIN_BUTTON_LAG_SEC:
@@ -145,10 +143,10 @@ class PS3Rover(Revolution):
                     flag = True
         return flag
 
+
 # main -----------------------------------------------------------------------------------
 
 if __name__ == '__main__':
-
     # Create a named temporary file for video stream
     tmpfile = tempfile.NamedTemporaryFile()
 
@@ -162,7 +160,7 @@ if __name__ == '__main__':
     time.sleep(DELAY_SEC)
     cmd = 'ffplay -window_title Rover_Revolution -framerate %d %s' % (FRAMERATE, tmpfile.name)
     FNULL = open(os.devnull, 'w')
-    subprocess.call(cmd.split(),  stdout=FNULL, stderr=subprocess.STDOUT)
+    subprocess.call(cmd.split(), stdout=FNULL, stderr=subprocess.STDOUT)
 
     # Shut down Rover
     rover.close()

@@ -16,13 +16,14 @@ GNU General Public License for more details.
 '''
 
 import struct
+import sys
 import threading
 import socket
 import time
 
-from blowfish import Blowfish
-from adpcm import decodeADPCMToPCM
-from byteutils import *
+from .blowfish import Blowfish
+from .adpcm import decodeADPCMToPCM
+from .byteutils import *
     
 class Rover:
 
@@ -36,7 +37,7 @@ class Rover:
         TARGET_ID = 'AC13'
         TARGET_PASSWORD = 'AC13'      
         
-        self.TREAD_DELAY_SEC = 1.0
+        self.TREAD_DELAY_SEC = 1
         self.KEEPALIVE_PERIOD_SEC = 60
         
                             
@@ -89,8 +90,11 @@ class Rover:
         self.mediasock = self._newSocket()
 
         # Send video-start request based on last four bytes of reply
-        self._sendRequest(self.mediasock, 'V', 0, 4, map(ord, reply[25:]))
-        
+        if sys.version_info < (3, 0):
+            self._sendRequest(self.mediasock, 'V', 0, 4, map(ord, reply[25:]))
+        else:
+            self._sendRequest(self.mediasock, 'V', 0, 4, reply[25:])
+
         # Send audio-start request
         self._sendCommandByteRequest(8, [1])
         
@@ -139,32 +143,42 @@ class Rover:
             threading.Timer(self.KEEPALIVE_PERIOD_SEC, self._startKeepaliveTask, [])
         self.keepalive_timer.start()
 
-    def _sendCommandByteRequest(self, id, bytes=[]):
-        self._sendCommandRequest(id, len(bytes), bytes)
+    def _sendCommandByteRequest(self, id, _bytes=[]):
+        self._sendCommandRequest(id, len(_bytes), _bytes)
         
     def _sendCommandIntRequest(self, id, intvals):
         bytevals = []
         for val in intvals:
             for c in struct.pack('I', val):
-                bytevals.append(ord(c))
+                if sys.version_info < (3,0):
+                    bytevals.append(ord(c))
+                else:
+                    bytevals.append(c)
+
         self._sendCommandRequest(id, 4*len(intvals), bytevals)       
 
     def _sendCommandRequest(self, id, n, contents):
         self._sendRequest(self.commandsock, 'O', id, n, contents)
 
     def _sendRequest(self, sock, c, id, n, contents):                  
-        bytes = [ord('M'), ord('O'), ord('_'), ord(c), id, \
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, n, 0, 0, 0, 0, 0, 0, 0]
-        bytes.extend(contents)
-        request = ''.join(map(chr, bytes))
+        if sys.version_info < (3, 0):
+            _bytes = [ord('M'), ord('O'), ord('_'), ord(c), id, \
+                      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, n, 0, 0, 0, 0, 0, 0, 0]
+            _bytes.extend(contents)
+            request = ''.join(map(chr, _bytes))
+        else:
+            request = bytearray([ord('M'), ord('O'), ord('_'), ord(c), id, \
+                      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, n, 0, 0, 0, 0, 0, 0, 0])
+            request.extend(bytearray(contents))
         sock.send(request)
-        
+
     def _receiveCommandReply(self, count):
         reply = self.commandsock.recv(count)
         return reply
         
     def _newSocket(self):
         sock = socket.socket()
+        sock.bind(('192.168.1.1',0))
         sock.connect((self.HOST, self.PORT)) 
         return sock
 
@@ -369,8 +383,11 @@ class _MediaThread(threading.Thread):
             except:
                 break
 
-            # Do we have a media frame start?        
-            k = buf.find('MO_V')
+            # Do we have a media frame start?
+            if sys.version_info < (3, 0):
+                k = buf.find('MO_V')
+            else:
+                k = buf.find(b'MO_V')
 
             # Yes
             if k  >= 0:
@@ -385,15 +402,23 @@ class _MediaThread(threading.Thread):
                     timestamp = bytes_to_uint(mediabytes, 23)
 
                     # Video bytes: call processing routine
-                    if ord(mediabytes[4]) == 1:
+                    if sys.version_info < (3,):
+                        key_value = ord(mediabytes[4])
+                    else:
+                        key_value = mediabytes[4]
+
+                    if key_value == 1:
                         self.rover.processVideo(mediabytes[36:], timestamp)
-                    
+
                     # Audio bytes: call processing routine
                     else:
                         audsize = bytes_to_uint(mediabytes, 36)
                         sampend = 40 + audsize
                         offset = bytes_to_short(mediabytes, sampend)
-                        index  = ord(mediabytes[sampend+2])
+                        if sys.version_info < (3,):
+                            index  = ord(mediabytes[sampend+2])
+                        else:
+                            index = mediabytes[sampend + 2]
                         pcmsamples = decodeADPCMToPCM(mediabytes[40:sampend], offset, index)
                         self.rover.processAudio(pcmsamples, timestamp)                    
                         

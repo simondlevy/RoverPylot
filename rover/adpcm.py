@@ -16,6 +16,8 @@ GNU General Public License for more details.
 
 '''
 
+import sys
+
 _indexAdjust = [ -1, -1, -1, -1, 2, 4, 6, 8 ]
 
 _stepTable = [
@@ -119,8 +121,11 @@ def decodeADPCMToPCM(raw, pre_sample, index):
     decoded = []
    
     for i in range(len(raw) << 1):
-        
-        b = ord(raw[i >> 1])
+
+        if sys.version_info < (3,):
+            b = ord(raw[i >> 1])
+        else:
+            b = raw[i >> 1]
 
         code = 0xF & b if i & 1 else b >> 4
         
