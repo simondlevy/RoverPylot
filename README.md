@@ -1,8 +1,7 @@
-RoverPylot	RoverPylot (whith py3 & CV)
-==========	==========
+RoverPylot
+==========
 
-
-Pilot the Brookstone Rover 2.0 and Rover Revolution from Python	**[Original READ.ME](https://github.com/simondlevy/RoverPylot/blob/master/README.md)**
+Pilot the Brookstone Rover 2.0 and Rover Revolution from Python
 
 <h2>Instructions</h2>	
 
